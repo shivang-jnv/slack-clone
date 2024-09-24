@@ -11,6 +11,9 @@ import {
   
 import { Doc } from "../../../../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
+import { PreferencesModal } from "./preferences-modal";
+import { useState } from "react";
+import { InviteModal } from "./invite-modal";
 
   interface WorkspaceHeaderProps {
     workspace: Doc<"workspaces">;
@@ -18,7 +21,21 @@ import { Hint } from "@/components/hint";
   }
 
 export const WorkspaceHeader = ({workspace, isAdmin}: WorkspaceHeaderProps) => {
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [preferencesOpen, setPreferencesOpen] = useState(false);
     return (
+        <>
+        <InviteModal 
+            open={inviteOpen}
+            setOpen={setInviteOpen}
+            name={workspace.name}
+            joinCode = {workspace.joinCode}
+        />
+        <PreferencesModal 
+        open={preferencesOpen} 
+        setOpen={setPreferencesOpen} 
+        initialValue={workspace.name}
+        />
         <div className="flex items-center justify-between px-4 h-[49px] gap-0.5">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -49,7 +66,7 @@ export const WorkspaceHeader = ({workspace, isAdmin}: WorkspaceHeaderProps) => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="cursor-pointer py-2"
-                                onClick={() => {}}
+                                onClick={() => setInviteOpen(true)}
                             >
                                 Invite people to {workspace.name}
 
@@ -57,7 +74,7 @@ export const WorkspaceHeader = ({workspace, isAdmin}: WorkspaceHeaderProps) => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="cursor-pointer py-2"
-                                onClick={() => {}}
+                                onClick={() => setPreferencesOpen(true)}
                             >
                                 Preferences
 
@@ -70,9 +87,11 @@ export const WorkspaceHeader = ({workspace, isAdmin}: WorkspaceHeaderProps) => {
                 </DropdownMenuContent>
             </DropdownMenu>
             <div className="flex items-center gap-0.5">
+                <Hint label="Filter conversations" side="bottom">
                 <Button variant="transparent" size="iconSm">
                     <ListFilter className="size-4"/>
                 </Button>
+                </Hint>
                 <Hint label="New message" side="bottom" >
                     <Button variant="transparent" size="iconSm">
                         <SquarePen className="size-4"/>
@@ -81,5 +100,6 @@ export const WorkspaceHeader = ({workspace, isAdmin}: WorkspaceHeaderProps) => {
 
             </div>
         </div>
+        </>
     );
 };
