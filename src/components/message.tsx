@@ -3,6 +3,9 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 
 import dynamic from "next/dynamic";
 import { Hint } from "./hint";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { Thumbnail } from "./thumnail";
+import { Toolbar } from "./toolbar";
 
 const Renderer = dynamic(() => import("@/components/renderer"), {ssr: false})
 
@@ -54,16 +57,74 @@ export const Message =({
   threadImage,
   threadTimestamp
 }:MessageProps) => {
-  return (
-    <div className="flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60 group relative">
+  if(isCompact){
+    return (
+      <div className="flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60 group relative">
       <div className="flex items-start gap-2">
         <Hint label={formatFullTime(new Date(createdAt))}>
           <button className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 w-[40px] leading-[22px] text-center hover:underline">
             {format(new Date(createdAt), "hh:mm")}
           </button>
         </Hint>
+        <div className="flex flex-col w-full">
+          <Renderer value={body}/>
+          <Thumbnail url={image}/> 
+          {updatedAt? (
+            <span className="text-xs text-muted-foreground">
+              (edited)
+            </span>
+          ): null
+
+          }
+        </div>
       </div>
-      <Renderer value={body}/>
     </div>
   )
-}
+};
+
+const avatarFallback = authorName.charAt(0).toUpperCase();
+
+return (
+  <div className="flex flex-col gap-2 p-1.5 px-5 hover:bg-gray-100/60 group relative">
+      <div className="flex items-start gap-2">
+        <button>
+        <Avatar className="mr-2">
+          <AvatarImage className="size-10" src={authorImage} />
+          <AvatarFallback>
+            {avatarFallback}
+          </AvatarFallback>
+        </Avatar>
+        </button>
+        <div className="flex flex-col w-full overflow-hidden">
+          <div className="text-sm">
+            <button onClick={() => {}} className="font-bold text-primary hover:underline">
+              {authorName}
+            </button>
+            <span>&nbsp;&nbsp;</span>
+            <Hint label={formatFullTime(new Date(createdAt))}>
+              <button className="text-xs text-muted-foreground hover:underline">
+                {format(new Date(createdAt), "h:mm a")}
+              </button>
+            </Hint>
+          </div>
+          <Renderer value={body}/> 
+          <Thumbnail url={image}/> 
+          {updatedAt? (
+            <span className="text-xs text-muted-foreground">(edited)</span>
+          ): null }
+        </div>
+      </div>
+      {!isEditing && (
+        <Toolbar 
+          isAuthor={isAuthor}
+          isPending={false}
+          handleEdit={() => setEditingId(id)}
+          handleThread={() => {}}
+          handleDelete={() => {}}
+          handleReaction={() => {}}
+          hideThreadButton={hideThreadButton}
+        />
+      )}
+    </div>
+)
+};
