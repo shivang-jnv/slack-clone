@@ -31,8 +31,8 @@ export const ChatInput = ({placeholder}:ChatInputProps) => {
   const workspaceId = useWorkspaceId();
   const channelId = useChannelId();
 
-  const {mutate: generateUploadUrl} = useGenerateUploadUrl();
-  const { mutate: createMessage} = useCreateMessage();
+    const {mutate: generateUploadUrl} = useGenerateUploadUrl();
+    const { mutate: createMessage} = useCreateMessage();
 
   const handleSubmit = async({
     body,
