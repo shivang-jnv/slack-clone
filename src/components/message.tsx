@@ -16,6 +16,7 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Reactions } from "./reactions";
 import { usePanel } from "@/hooks/use-panel";
+import { ThreadBar } from "./thread-bar";
 
 const Editor = dynamic(() => import("@/components/editor"), {ssr: false});
 const Renderer = dynamic(() => import("@/components/renderer"), {ssr: false});
@@ -42,6 +43,7 @@ interface MessageProps {
   hideThreadButton?: boolean;
   threadCount?: number;
   threadImage?: string;
+  threadName?: string;
   threadTimestamp?: number; 
 };
 
@@ -66,9 +68,10 @@ export const Message =({
   hideThreadButton,
   threadCount,
   threadImage,
-  threadTimestamp
+  threadName,
+  threadTimestamp,
 }:MessageProps) => {
-  const { parentMessageId, onOpenMessage, onClose} = usePanel();
+  const { parentMessageId, onOpenMessage, onOpenProfile, onClose} = usePanel();
 
   const [ConfirmDialog, confirm] = useConfirm(
     "Delete message",
@@ -79,7 +82,7 @@ export const Message =({
   const {mutate: removeMessage, isPending: isRemovingMessage} = useRemoveMessage();
   const {mutate: toggleReaction, isPending: isTogglingReaction} = useToggleReaction();
   
-  const isPending = isUpdatingMessage;
+  const isPending = isUpdatingMessage || isTogglingReaction;
 
   const handleReaction = (value: string) => {
     toggleReaction({messageId: id, value}, {
@@ -156,6 +159,13 @@ export const Message =({
             </span>
           ): null}
           <Reactions data={reactions} onChange={handleReaction}/>
+          <ThreadBar 
+            count={threadCount}
+            image={threadImage}
+            name={threadName}
+            timestamp={threadTimestamp}
+            onClick={() => onOpenMessage(id)}
+          />
         </div>
         )}
       </div>
@@ -186,7 +196,7 @@ return (
   )}
   >
       <div className="flex items-start gap-2">
-        <button>
+        <button onClick={() => onOpenProfile(memberId)}>
         <Avatar className="mr-2">
           <AvatarImage className="size-10" src={authorImage} />
           <AvatarFallback>
@@ -208,7 +218,7 @@ return (
       :(
         <div className="flex flex-col w-full overflow-hidden">
           <div className="text-sm">
-            <button onClick={() => {}} className="font-bold text-primary hover:underline">
+            <button onClick={() => onOpenProfile(memberId)} className="font-bold text-primary hover:underline">
               {authorName}
             </button>
             <span>&nbsp;&nbsp;</span>
@@ -224,6 +234,13 @@ return (
             <span className="text-xs text-muted-foreground">(edited)</span>
           ): null }
             <Reactions data={reactions} onChange={handleReaction}/>
+            <ThreadBar
+            count={threadCount}
+            image={threadImage}
+            name={threadName}
+            timestamp={threadTimestamp}
+            onClick={() => onOpenMessage(id)}
+          />
         </div>
         )}
       </div>

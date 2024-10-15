@@ -19,6 +19,7 @@ const populateThread = async(ctx: QueryCtx, messageId: Id<"messages">) => {
         count: 0,
         image: undefined,
         timestamp: 0,
+        name: "",
 
       }
     }
@@ -31,6 +32,7 @@ const populateThread = async(ctx: QueryCtx, messageId: Id<"messages">) => {
         count: 0,
         image: undefined,
         timeStamp: 0,
+        name: "",
       };
     }
 
@@ -40,6 +42,7 @@ const populateThread = async(ctx: QueryCtx, messageId: Id<"messages">) => {
       count: messages.length,
       image: lastMessageUser?.image,
       timeStamp: lastMessage._creationTime,
+      name: lastMessageUser,
 
     }
 
@@ -314,6 +317,7 @@ export const get = query({
               reactions: reactionsWithoutMemberIdProperty,
               threadCount: thread.count,
               threadImage: thread.image,
+              threadName: thread.name,
               threadTimestamp: thread.timeStamp,
             };
           })
@@ -358,8 +362,6 @@ export const create = mutation({
 
       _conversationId = parentMessage.conversationId;
     }
-
-    // todo: handle conversationId
 
     const messageId = await ctx.db.insert("messages", {
       memberId: member._id,
