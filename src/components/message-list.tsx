@@ -134,13 +134,13 @@ export const MessageList = ({
           <Loader className="size-4 animate-spin"/>
         </span>
       </div>
-      )}
+      )},
       {variant === "channel" && channelName && channelCreationTime && (
         <ChannelHero
           name={channelName}
           creationTime={channelCreationTime}
         />
-      )}
+      )},
       {variant === "conversation" && (
         <ConversationHero
           name={memberName}
