@@ -1,0 +1,70 @@
+# Production Polish & Optimization Digest
+# Generated on 2026-02-16
+
+This document summarizes the changes, optimizations, and stability fixes implemented to prepare the Slack Clone for production.
+
+## 1. User Experience: Optimistic UI & Interactions
+
+### Instant Messaging (Optimistic Updates)
+**What:** Messages now appear instantly in the chat window without waiting for server confirmation.
+**How:** 
+- We implemented a local state store (`pendingMessagesAtom` using Jotai) to hold messages temporarily.
+- When a user sends a message, it is immediately added to this local store and displayed in the `MessageList` with a subtle transparency to indicate "sending" status.
+- Once the server confirms the message creation, the local pending message is removed and replaced by the real server data seamlessly.
+
+### Instant Image Previews
+**What:** Uploaded images are visible immediately while they are being processed and uploaded.
+**How:** 
+- We generate a temporary browser-local URL (`URL.createObjectURL`) for the selected file.
+- This URL is passed to the optimistic message object, allowing the `<img>` tag to render the local file instantly.
+- **Critical Fix:** We implemented a cleanup mechanism (`URL.revokeObjectURL`) that triggers after the upload completes to prevent memory leaks that were causing browser crashes.
+
+### Workspace Creation
+**What:** Fixed a UI freeze issue where the application became unresponsive after creating a new workspace.
+**How:** 
+- Identified a race condition between the modal closing animation and the page navigation.
+- Reordered the operations: the modal now fully closes and restores focus to the document body *before* the router navigates to the new workspace URL.
+- Added a safe 150ms delay to ensure the `pointer-events: none` style lock from the modal libraries is completely removed.
+
+## 2. Performance Optimizations
+
+### Client-Side Image Compression
+**What:** Reduced the upload size and bandwidth usage for image attachments.
+**How:** 
+- Created a utility (`compressImage`) using the HTML5 Canvas API.
+- Images larger than 500KB are automatically resized (max 1920px) and compressed to JPEG/80% quality before being sent to the server.
+- This significantly speeds up uploads and reduces storage costs.
+
+### Database Denormalization (Thread Metadata)
+**What:** Improved the loading speed of message lists, specifically for messages with replies.
+**How:** 
+- Previously, displaying a message's reply count required a separate database query for every single message (N+1 problem).
+- We modified the data schema to store thread metadata (`threadCount`, `threadImage`, `threadTimestamp`) directly on the *parent message*.
+- These fields are automatically updated whenever a reply is added or removed.
+- The frontend now reads these fields directly from the message object, eliminating hundreds of potential sub-queries per page load.
+
+### List Virtualization
+**What:** Ensured smooth scrolling performance even with thousands of messages.
+**How:** 
+- Utilized `react-virtuoso` to implement windowing/virtualization.
+- The browser only renders the DOM nodes for messages currently visible in the viewport, vastly reducing memory usage and CPU load.
+
+## 3. Code Quality & Stability
+
+### Strict Type Checking & Linting
+**What:** Prevented regressions and ensured code reliability during builds.
+**How:** 
+- Updated `next.config.mjs` to enforce strict type checking and linting during the production build process.
+- Errors that were previously ignored (unused variables, missing dependencies, accessibility warnings) must now be fixed before a build can succeed.
+
+### Accessibility Improvements
+**What:** Resolved console warnings regarding accessible dialog components.
+**How:** 
+- Added missing `DialogDescription` components to modals to comply with screen reader requirements.
+- Added `displayName` to memoized components to aid in debugging and React DevTools inspection.
+
+### Memory Leak Prevention
+**What:** Prevented the application from slowing down over time.
+**How:** 
+- Removed a `PerformanceMonitor` component that was logging excessive data.
+- Fixed `useMemo` dependency arrays in the `MessageList` component to prevent unnecessary re-computations and ensure stable object references.
