@@ -16,10 +16,19 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Reactions } from "./reactions";
 import { usePanel } from "@/hooks/use-panel";
+import { useRef, memo, useState } from "react";
 import { ThreadBar } from "./thread-bar";
 
-const Editor = dynamic(() => import("@/components/editor"), {ssr: false});
-const Renderer = dynamic(() => import("@/components/renderer"), {ssr: false});
+// ...
+
+const Editor = dynamic(() => import("@/components/editor"), {
+  ssr: false, 
+  loading: () => <div className="h-[40px] w-full bg-slate-100 animate-pulse rounded-md"/>
+});
+const Renderer = dynamic(() => import("@/components/renderer"), {
+  ssr: false, 
+  loading: () => <div className="h-[20px] w-[200px] bg-slate-100 animate-pulse rounded-md"/>
+});
 
 interface MessageProps {
   id: Id<"messages">;
@@ -51,7 +60,7 @@ const formatFullTime = (date: Date) => {
   return `${isToday(date) ? "Today" : isYesterday(date) ? "Yesterday" : format(date, "MMM d, yyyy")} at ${format(date, "h:mm:ss a")}`;
 }
 
-export const Message =({
+const MessageComponent = ({
   id,
   isAuthor,
   memberId,
@@ -84,13 +93,37 @@ export const Message =({
   
   const isPending = isUpdatingMessage || isTogglingReaction;
 
+  const reactionClickCount = useRef<Record<string, number>>({});
+  const reactionTimeout = useRef<Record<string, NodeJS.Timeout>>({});
+
   const handleReaction = (value: string) => {
-    toggleReaction({messageId: id, value}, {
-      onError: () => {
-        toast.error("Failed to toggle reaction");
-      }
-    })
+     // Increment click count
+     reactionClickCount.current[value] = (reactionClickCount.current[value] || 0) + 1;
+
+     // Clear existing timeout for THIS emoji
+     if(reactionTimeout.current[value]){
+        clearTimeout(reactionTimeout.current[value]);
+     }
+
+     // Set new timeout
+     reactionTimeout.current[value] = setTimeout(() => {
+        const clicks = reactionClickCount.current[value];
+        
+        // If odd number of clicks, we need to toggle. If even, we are back to start.
+        if (clicks % 2 !== 0) {
+            toggleReaction({messageId: id, value}, {
+                onError: () => {
+                   toast.error("Failed to toggle reaction");
+                }
+            });
+        }
+        
+        // Reset count after processing
+        delete reactionClickCount.current[value];
+        delete reactionTimeout.current[value];
+     }, 300); // 300ms is usually enough feels responsive
   };
+
 
   const handleRemove = async () => {
     const ok = await confirm();
@@ -259,3 +292,23 @@ return (
     </>
 )
 };
+
+export const Message = memo(MessageComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.id === nextProps.id &&
+        prevProps.isEditing === nextProps.isEditing &&
+        prevProps.isCompact === nextProps.isCompact &&
+        prevProps.hideThreadButton === nextProps.hideThreadButton &&
+        prevProps.body === nextProps.body &&
+        prevProps.image === nextProps.image &&
+        prevProps.updatedAt === nextProps.updatedAt &&
+        prevProps.createdAt === nextProps.createdAt &&
+        prevProps.memberId === nextProps.memberId &&
+        prevProps.authorName === nextProps.authorName &&
+        prevProps.authorImage === nextProps.authorImage &&
+        prevProps.reactions.length === nextProps.reactions.length && // Simple length check, deep check might be too expensive but clearer
+        prevProps.threadCount === nextProps.threadCount &&
+        prevProps.threadImage === nextProps.threadImage &&
+        prevProps.threadTimestamp === nextProps.threadTimestamp
+    );
+});

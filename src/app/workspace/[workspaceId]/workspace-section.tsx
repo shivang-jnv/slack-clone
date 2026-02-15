@@ -1,6 +1,7 @@
 import { PlusIcon } from "lucide-react";
 import { FaCaretDown } from "react-icons/fa";
 import {useToggle} from "react-use"
+import { memo } from "react";
 
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ interface WorkspaceSectionProps {
   onNew?: () => void;
 }
 
-export const WorkspaceSection = ({
+export const WorkspaceSection = memo(({
   children,
   label,
   hint,
@@ -59,4 +60,7 @@ export const WorkspaceSection = ({
     </div>
   )
 
-}
+
+});
+
+WorkspaceSection.displayName = "WorkspaceSection";

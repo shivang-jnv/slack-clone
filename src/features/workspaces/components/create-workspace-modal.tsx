@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,8 +36,13 @@ export const CreateWorkspaceModal = () => {
       {
         onSuccess(id) {
           toast.success("Workspace created");
-          router.push(`/workspace/${id}`);
           handleClose();
+          // Add a small delay to allow the modal to close and body styles to be restored
+          // before navigating. Radix UI can sometimes leave pointer-events: none on body
+          // if unmounted/navigated away too quickly.
+          setTimeout(() => {
+             router.push(`/workspace/${id}`);
+          }, 150); 
         },
       }
     );
@@ -47,6 +53,9 @@ export const CreateWorkspaceModal = () => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a workspace</DialogTitle>
+          <DialogDescription className="hidden">
+             Create a new workspace to start collaborating with your team.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

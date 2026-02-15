@@ -28,6 +28,7 @@ export const Thumbnail = ({url}:ThumbnailProps) => {
       <img 
         src={url} 
         alt="Message image" 
+        loading="lazy"
         className="rounded-md object-cover size-full" 
       />
     </div>

@@ -40,6 +40,10 @@ const schema = defineSchema({
     parentMessageId: v.optional(v.id("messages")),
     conversationId: v.optional(v.id("conversations")),
     updatedAt: v.optional(v.number()),
+    threadCount: v.optional(v.number()),
+    threadImage: v.optional(v.string()),
+    threadName: v.optional(v.string()),
+    threadTimestamp: v.optional(v.number()),
 
   })
     .index("by_workspace_id", ["workspaceId"])

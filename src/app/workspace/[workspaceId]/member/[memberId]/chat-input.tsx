@@ -7,6 +7,7 @@ import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { compressImage } from "@/lib/image-compression";
 
 const Editor = dynamic(() => import("@/components/editor"), {ssr: false});
 
@@ -58,10 +59,12 @@ export const ChatInput = ({placeholder, conversationId}:ChatInputProps) => {
           throw new Error("Url not found");
         };
 
+        const compressedImage = await compressImage(image);
+
         const result = await fetch(url, {
           method: "POST",
-          headers: {"Content-type": image.type},
-          body: image,
+          headers: {"Content-type": compressedImage.type},
+          body: compressedImage,
         });
 
         if (!result.ok ){

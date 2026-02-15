@@ -8,6 +8,11 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { compressImage } from "@/lib/image-compression";
+import { useSetAtom } from "jotai";
+import { pendingMessagesAtom } from "@/features/messages/store/pending-messages";
+import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { useCurrentUser } from "@/features/auth/api/use-current-user";
 
 const Editor = dynamic(() => import("@/components/editor"), {ssr: false});
 
@@ -34,6 +39,10 @@ export const ChatInput = ({placeholder}:ChatInputProps) => {
     const {mutate: generateUploadUrl} = useGenerateUploadUrl();
     const { mutate: createMessage} = useCreateMessage();
 
+  const setPendingMessages = useSetAtom(pendingMessagesAtom);
+  const { data: member } = useCurrentMember({ workspaceId });
+  const { data: user } = useCurrentUser();
+
   const handleSubmit = async({
     body,
     image
@@ -41,9 +50,27 @@ export const ChatInput = ({placeholder}:ChatInputProps) => {
     body: string;
     image: File | null
   }) => {
+    const tempId = crypto.randomUUID();
+    const previewUrl = image ? URL.createObjectURL(image) : undefined;
+    
     try{
       setIsPending(true);
       editorRef?.current?.enable(false);
+
+      // Optimistic Update
+      if (member && user) {
+          setPendingMessages(prev => [...prev, {
+              id: tempId,
+              body,
+              image,
+              previewUrl,
+              memberId: member._id,
+              user: user,
+              workspaceId,
+              channelId,
+              createdAt: Date.now(),
+          }]);
+      }
 
       const values: CreateMessageValues = {
         channelId,
@@ -59,10 +86,12 @@ export const ChatInput = ({placeholder}:ChatInputProps) => {
           throw new Error("Url not found");
         };
 
+        const compressedImage = await compressImage(image);
+
         const result = await fetch(url, {
           method: "POST",
-          headers: {"Content-type": image.type},
-          body: image,
+          headers: {"Content-type": compressedImage.type},
+          body: compressedImage,
         });
 
         if (!result.ok ){
@@ -83,6 +112,9 @@ export const ChatInput = ({placeholder}:ChatInputProps) => {
     } finally{
         setIsPending(false);
         editorRef?.current?.enable(true);
+        // Remove pending message
+        setPendingMessages(prev => prev.filter(msg => msg.id !== tempId));
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
     }
    
   }

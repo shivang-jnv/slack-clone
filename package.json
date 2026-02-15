@@ -40,18 +40,19 @@
     "react-resizable-panels": "^2.1.2",
     "react-use": "^17.5.1",
     "react-verification-input": "^4.1.2",
+    "react-virtuoso": "^4.18.1",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
+    "@types/node": "20.19.33",
+    "@types/react": "18.3.28",
     "@types/react-dom": "^18",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.12",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }

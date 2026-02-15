@@ -99,7 +99,16 @@ export const remove = mutation({
       throw new Error("Unauthorized");
     }
 
-    await ctx.db.delete(args.id)
+    await ctx.db.delete(args.id);
+
+    if (message.parentMessageId) {
+      const parentMessage = await ctx.db.get(message.parentMessageId);
+      if (parentMessage) {
+        await ctx.db.patch(message.parentMessageId, {
+          threadCount: Math.max(0, (parentMessage.threadCount || 0) - 1),
+        });
+      }
+    }
 
     return args.id;
   }
@@ -271,7 +280,7 @@ export const get = query({
             }
 
             const reactions = await populateReactions(ctx, message._id);
-            const thread = await populateThread(ctx, message._id);
+            // const thread = await populateThread(ctx, message._id); // Removed N+1 query
             const image =  message.image
               
               ? await ctx.storage.getUrl(message.image)
@@ -315,10 +324,10 @@ export const get = query({
               member,
               user,
               reactions: reactionsWithoutMemberIdProperty,
-              threadCount: thread.count,
-              threadImage: thread.image,
-              threadName: thread.name,
-              threadTimestamp: thread.timeStamp,
+              threadCount: message.threadCount,
+              threadImage: message.threadImage,
+              threadName: message.threadName,
+              threadTimestamp: message.threadTimestamp,
             };
           })
         )
@@ -351,6 +360,18 @@ export const create = mutation({
       throw new Error("Unauthorized")
     }
 
+    // Populate user to get name/image for denormalization
+    const user = await populateUser(ctx, member.userId);
+    if(!user){
+       throw new Error("User not found");
+    }
+    
+    // Combining member and user for easier access later
+    const memberWithUser = {
+        ...member,
+        user
+    };
+
     let _conversationId = args.conversationId;
 
     if(!args.conversationId  && !args.channelId && args.parentMessageId){
@@ -364,7 +385,7 @@ export const create = mutation({
     }
 
     const messageId = await ctx.db.insert("messages", {
-      memberId: member._id,
+      memberId: memberWithUser._id,
       body: args.body,
       image: args.image,
       channelId: args.channelId,
@@ -372,6 +393,20 @@ export const create = mutation({
       workspaceId: args.workspaceId,
       parentMessageId: args.parentMessageId,
     });
+
+    if(args.parentMessageId){
+      // Get parent message again to ensure we have latest count and valid object
+      const parentMessage = await ctx.db.get(args.parentMessageId);
+      
+      if(parentMessage) {
+        await ctx.db.patch(args.parentMessageId, {
+          threadCount: (parentMessage.threadCount || 0) + 1,
+          threadImage: memberWithUser.user?.image,
+          threadName: memberWithUser.user?.name,
+          threadTimestamp: Date.now(),
+        })
+      }
+    }
 
     return messageId;
   }
